@@ -139,6 +139,8 @@ module RSpec
         require case expectation_framework.to_s
         when /rspec/i
           'rspec/core/expecting/with_rspec'
+        when /stdlib/i
+          'rspec/core/expecting/with_stdlib'
         else
           raise ArgumentError, "#{expectation_framework.inspect} is not supported"
         end
