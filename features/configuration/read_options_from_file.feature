@@ -2,13 +2,18 @@ Feature: read command line configuration options from files
 
   RSpec reads command line configuration options from files in two different
   locations:
-  
+
     Local:  "./.rspec" (i.e. in the project's root directory)
     Global: "~/.rspec" (i.e. in the user's home directory)
 
   Options declared in the local file override those in the global file, while
   those declared in RSpec.configure will override any ".rspec" file.
-  
+
+  You can also tell RSpec to read in options from files at other locations
+  using the --options or -O command line option:
+
+    rspec --options local.opts spec
+
   Scenario: color set in .rspec
     Given a file named ".rspec" with:
       """
@@ -33,6 +38,31 @@ Feature: read command line configuration options from files
     When I run "rspec ./spec/example_spec.rb"
     Then the output should contain "1 example, 0 failures"
 
+  Scenario: customize location of options file
+    Given a file named "custom.opts" with:
+      """
+      --color
+      """
+    And a file named "spec/example_spec.rb" with:
+      """
+      describe "color_enabled" do
+        context "when set with RSpec.configure" do
+          before do
+            # color is disabled for non-tty output, so stub the output stream
+            # to say it is tty, even though we're running this with cucumber
+            RSpec.configuration.output_stream.stub(:tty?) { true }
+          end
+
+          it "is true" do
+            RSpec.configuration.should be_color_enabled
+          end
+        end
+      end
+      """
+    When I run "rspec spec/example_spec.rb --options custom.opts"
+    Then the output should contain "1 example, 0 failures"
+
+
   Scenario: formatter set in RSpec.configure overrides .rspec
     Given a file named ".rspec" with:
       """
@@ -47,7 +77,7 @@ Feature: read command line configuration options from files
       require "spec_helper"
 
       describe "formatter" do
-        context "when set with RSpec.configure and in spec.opts" do
+      context "when set with RSpec.configure and in .rspec" do
           it "takes the value set in spec.opts" do
             RSpec.configuration.formatter.should be_an(RSpec::Core::Formatters::DocumentationFormatter)
           end
@@ -56,7 +86,7 @@ Feature: read command line configuration options from files
       """
     When I run "rspec ./spec/example_spec.rb"
     Then the output should contain "1 example, 0 failures"
-    
+
   Scenario: using ERB in .rspec
     Given a file named ".rspec" with:
       """
